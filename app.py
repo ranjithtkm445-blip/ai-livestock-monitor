@@ -2,7 +2,6 @@
 
 import os, sys, json
 import gradio as gr
-import spaces
 from PIL import Image
 import torch
 import torch.nn as nn
@@ -124,7 +123,6 @@ def _load_weight():
 
 
 # ── Inference functions ───────────────────────────────────────────────────────
-@spaces.GPU
 def predict_breed(img: Image.Image):
     model, classes = _load_breed()
     x = tfm_standard(img).unsqueeze(0).to(device)
@@ -134,7 +132,6 @@ def predict_breed(img: Image.Image):
     top5 = sorted(zip(classes, probs.tolist()), key=lambda x: -x[1])[:5]
     return classes[idx], round(probs[idx].item() * 100, 2), top5
 
-@spaces.GPU
 def predict_disease(img: Image.Image):
     model, classes = _load_disease()
     x = tfm_standard(img).unsqueeze(0).to(device)
@@ -143,7 +140,6 @@ def predict_disease(img: Image.Image):
     idx = int(probs.index(max(probs)))
     return classes[idx], round(probs[0]*100, 2), round(probs[1]*100, 2)
 
-@spaces.GPU
 def identify_muzzle(img: Image.Image, top_k=3):
     model, index, meta = _load_muzzle()
     x = tfm_muzzle(img).unsqueeze(0).to(device)
@@ -161,7 +157,6 @@ def identify_muzzle(img: Image.Image, top_k=3):
     matched = top_sim >= SIMILARITY_THRESHOLD
     return matches[0][0], top_sim, matched, matches
 
-@spaces.GPU
 def estimate_weight(height_cm, volume_l, feed_idx, sunlight):
     model, ckpt = _load_weight()
     means, stds = ckpt["means"], ckpt["stds"]
