@@ -346,6 +346,26 @@ demo = gr.TabbedInterface(
 )
 
 import threading
+from fastapi import FastAPI
+from fastapi.responses import HTMLResponse
+import uvicorn
+
+fastapi_app = FastAPI()
+
+@fastapi_app.get("/health")
+def health():
+    return {"status": "ok"}
+
+@fastapi_app.get("/", response_class=HTMLResponse)
+def root():
+    return "<h2>AI Livestock Monitor — loading, please wait...</h2>"
+
+def _launch_gradio():
+    # Mount gradio on /gradio path
+    import gradio as gr
+    port = int(os.environ.get("PORT", 7860))
+    demo.launch(server_name="0.0.0.0", server_port=port,
+                show_error=True, prevent_thread_lock=True)
 
 def _warm():
     try:
@@ -354,7 +374,11 @@ def _warm():
     except Exception as e:
         print(f"Warmup error: {e}")
 
+port = int(os.environ.get("PORT", 7860))
+demo.launch(server_name="0.0.0.0", server_port=port, show_error=True,
+            prevent_thread_lock=True)
 threading.Thread(target=_warm, daemon=True).start()
 
-port = int(os.environ.get("PORT", 7860))
-demo.launch(server_name="0.0.0.0", server_port=port, show_error=True)
+import time
+while True:
+    time.sleep(60)
