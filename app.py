@@ -346,8 +346,6 @@ demo = gr.TabbedInterface(
 )
 
 import threading
-import uvicorn
-from gradio.routes import App as GradioApp
 
 def _warm():
     try:
@@ -357,7 +355,6 @@ def _warm():
         print(f"Warmup error: {e}")
 
 threading.Thread(target=_warm, daemon=True).start()
-
-app = GradioApp.create_app(demo)
-port = int(os.environ.get("PORT", 7860))
-uvicorn.run(app, host="0.0.0.0", port=port)
+port = int(os.environ.get("PORT", 10000))
+print(f"Starting on port {port}")
+demo.launch(server_name="0.0.0.0", server_port=port, share=False, show_error=True)
