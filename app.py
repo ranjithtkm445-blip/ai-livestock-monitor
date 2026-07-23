@@ -345,5 +345,16 @@ demo = gr.TabbedInterface(
     title="🐄 AI Livestock Biometric & Health Monitoring — ROSCODE TECH",
 )
 
+import threading
+
+def _warm():
+    try:
+        _load_breed(); _load_disease(); _load_muzzle(); _load_weight()
+        print("Models warmed up.")
+    except Exception as e:
+        print(f"Warmup error: {e}")
+
+threading.Thread(target=_warm, daemon=True).start()
+
 port = int(os.environ.get("PORT", 7860))
 demo.launch(server_name="0.0.0.0", server_port=port, show_error=True)
