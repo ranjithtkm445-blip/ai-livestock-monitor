@@ -197,18 +197,18 @@ MUZZLE_SAMPLES  = _samples([f"muzzle_{i}.jpg" for i in range(7, 14)])
 # ── Tab: Breed Classification ─────────────────────────────────────────────────
 def run_breed(img):
     if img is None:
-        return "No image provided.", {}
+        return "No image provided.", "—"
     breed, conf, top5 = predict_breed(Image.fromarray(img).convert("RGB"))
-    label = f"🐄 **{breed}** — {conf}% confidence"
-    probs = {b: round(p * 100, 2) for b, p in top5}
-    return label, probs
+    label = f"🐄 {breed} — {conf}% confidence"
+    top5_text = "\n".join([f"{b}: {round(p*100,2)}%" for b, p in top5])
+    return label, top5_text
 
 breed_tab = gr.Interface(
     fn=run_breed,
     inputs=gr.Image(label="Upload or select a cattle image"),
     outputs=[
-        gr.Markdown(label="Prediction"),
-        gr.Label(label="Top-5 Breed Probabilities", num_top_classes=5),
+        gr.Textbox(label="Predicted Breed"),
+        gr.Textbox(label="Top-5 Probabilities", lines=5),
     ],
     examples=[[p] for p in BREED_SAMPLES],
     title="🐄 Cattle Breed Classification",
@@ -223,17 +223,17 @@ def run_disease(img):
         return "No image provided.", 0.0, 0.0
     disease, healthy_p, lumpy_p = predict_disease(Image.fromarray(img).convert("RGB"))
     is_healthy = disease == "healthy"
-    status = f"✅ **HEALTHY** — {healthy_p}% confidence" if is_healthy \
-             else f"⚠️ **LUMPY SKIN DISEASE DETECTED** — {lumpy_p}% confidence"
-    return status, healthy_p, lumpy_p
+    status = f"HEALTHY — {healthy_p}% confidence" if is_healthy \
+             else f"LUMPY SKIN DISEASE DETECTED — {lumpy_p}% confidence"
+    return status, f"{healthy_p}%", f"{lumpy_p}%"
 
 disease_tab = gr.Interface(
     fn=run_disease,
     inputs=gr.Image(label="Upload cattle image"),
     outputs=[
-        gr.Markdown(label="Disease Status"),
-        gr.Number(label="Healthy Probability (%)"),
-        gr.Number(label="Lumpy Skin Probability (%)"),
+        gr.Textbox(label="Disease Status"),
+        gr.Textbox(label="Healthy Probability"),
+        gr.Textbox(label="Lumpy Skin Probability"),
     ],
     examples=[[p] for p in DISEASE_SAMPLES],
     title="🦠 Disease Detection",
@@ -247,8 +247,8 @@ def run_muzzle(img):
     if img is None:
         return "No image provided.", "—", "—"
     cow_id, sim, matched, matches = identify_muzzle(Image.fromarray(img).convert("RGB"), top_k=3)
-    status = f"🐄 **Identified: {cow_id}** (similarity: {sim:.3f})" if matched \
-             else f"❓ **Unknown** — best similarity {sim:.3f} (below threshold 0.75)"
+    status = f"Identified: {cow_id} (similarity: {sim:.3f})" if matched \
+             else f"Unknown — best similarity {sim:.3f} (below threshold 0.75)"
     top3 = "\n".join([f"#{i+1} {m[0]} — {m[1]:.4f}" for i, m in enumerate(matches)])
     return status, f"{sim:.4f}", top3
 
@@ -256,7 +256,7 @@ muzzle_tab = gr.Interface(
     fn=run_muzzle,
     inputs=gr.Image(label="Upload muzzle image"),
     outputs=[
-        gr.Markdown(label="Identification Result"),
+        gr.Textbox(label="Identification Result"),
         gr.Textbox(label="Top Similarity Score"),
         gr.Textbox(label="Top-3 Matches", lines=3),
     ],
@@ -273,7 +273,7 @@ def run_weight(height_cm, volume_l, feed_type, sunlight):
     feed_idx = feed_map.get(feed_type, 0)
     w = estimate_weight(height_cm, volume_l, feed_idx, sunlight)
     cat = "Calf" if w < 150 else ("Young" if w < 300 else ("Adult" if w < 500 else "Heavy"))
-    return f"**{w} kg** — {cat}"
+    return f"{w} kg — {cat}"
 
 weight_tab = gr.Interface(
     fn=run_weight,
@@ -283,7 +283,7 @@ weight_tab = gr.Interface(
         gr.Dropdown(["Grass", "Grain", "Mixed"], value="Grass", label="Feed Type"),
         gr.Slider(0, 16, value=8, step=0.5, label="Sunlight (h/day)"),
     ],
-    outputs=gr.Markdown(label="Estimated Weight"),
+    outputs=gr.Textbox(label="Estimated Weight"),
     examples=[[130, 400, "Grass", 8], [150, 600, "Grain", 10], [110, 250, "Mixed", 6]],
     title="⚖️ Weight Estimation",
     description="Estimates cattle weight from biometric measurements using MLP regression.",
@@ -310,15 +310,10 @@ def run_full(img, height_cm, volume_l, feed_type, sunlight):
     risk = min(risk, 100)
     risk_label = "🔴 High" if risk > 50 else ("🟠 Moderate" if risk > 20 else "🟢 Low")
 
-    breed_out   = f"🐄 **{breed}** ({conf}%)"
-    disease_out = f"✅ Healthy ({h_p}%)" if is_healthy else f"⚠️ Lumpy Skin ({l_p}%)"
-    muzzle_out  = f"🐄 {cow_id} (sim={sim:.3f})" if matched else f"❓ Unknown (sim={sim:.3f})"
-    summary = (
-        f"**Weight:** {w} kg\n\n"
-        f"**Health Risk:** {risk_label} ({risk}%)\n\n"
-        f"> ⚠️ Isolate and consult vet immediately." if not is_healthy else
-        f"**Weight:** {w} kg\n\n**Health Risk:** {risk_label} ({risk}%)"
-    )
+    breed_out   = f"{breed} ({conf}%)"
+    disease_out = f"Healthy ({h_p}%)" if is_healthy else f"LUMPY SKIN DETECTED ({l_p}%)"
+    muzzle_out  = f"{cow_id} (sim={sim:.3f})" if matched else f"Unknown (sim={sim:.3f})"
+    summary     = f"Weight: {w} kg | Risk: {risk_label} ({risk}%)"
     return breed_out, disease_out, muzzle_out, summary
 
 full_tab = gr.Interface(
@@ -331,10 +326,10 @@ full_tab = gr.Interface(
         gr.Slider(0, 16, value=8, step=0.5, label="Sunlight (h/day)"),
     ],
     outputs=[
-        gr.Markdown(label="🐄 Breed"),
-        gr.Markdown(label="🦠 Disease"),
-        gr.Markdown(label="👃 Muzzle ID"),
-        gr.Markdown(label="📋 Summary"),
+        gr.Textbox(label="Breed"),
+        gr.Textbox(label="Disease"),
+        gr.Textbox(label="Muzzle ID"),
+        gr.Textbox(label="Summary"),
     ],
     examples=[
         [BREED_SAMPLES[0],   130, 400, "Grass", 8],
@@ -355,5 +350,4 @@ demo = gr.TabbedInterface(
     title="🐄 AI Livestock Biometric & Health Monitoring — ROSCODE TECH",
 )
 
-if __name__ == "__main__":
-    demo.launch()
+demo.launch()
