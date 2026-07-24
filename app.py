@@ -183,26 +183,26 @@ breed_tab = gr.Interface(
     fn=lambda img: predict_breed(Image.fromarray(img).convert("RGB")) if img is not None else ("—","—"),
     inputs=gr.Image(label="Cattle Image"),
     outputs=[gr.Textbox(label="Breed"), gr.Textbox(label="Top-5", lines=5)],
-    examples=[[p] for p in BREED_SAMPLES], title="🐄 Breed Classification", flagging_mode="never",
+    examples=[[p] for p in BREED_SAMPLES], title="🐄 Breed Classification", allow_flagging="never",
 )
 disease_tab = gr.Interface(
     fn=lambda img: predict_disease(Image.fromarray(img).convert("RGB")) if img is not None else ("—","—","—"),
     inputs=gr.Image(label="Cattle Image"),
     outputs=[gr.Textbox(label="Status"), gr.Textbox(label="Healthy %"), gr.Textbox(label="Lumpy %")],
-    examples=[[p] for p in DISEASE_SAMPLES], title="🦠 Disease Detection", flagging_mode="never",
+    examples=[[p] for p in DISEASE_SAMPLES], title="🦠 Disease Detection", allow_flagging="never",
 )
 muzzle_tab = gr.Interface(
     fn=lambda img: identify_muzzle(Image.fromarray(img).convert("RGB")) if img is not None else ("—","—","—"),
     inputs=gr.Image(label="Muzzle Image"),
     outputs=[gr.Textbox(label="ID"), gr.Textbox(label="Similarity"), gr.Textbox(label="Top-3",lines=3)],
-    examples=[[p] for p in MUZZLE_SAMPLES], title="👃 Muzzle Biometrics", flagging_mode="never",
+    examples=[[p] for p in MUZZLE_SAMPLES], title="👃 Muzzle Biometrics", allow_flagging="never",
 )
 weight_tab = gr.Interface(
     fn=estimate_weight,
     inputs=[gr.Slider(80,200,130,label="Height (cm)"), gr.Slider(50,1500,400,label="Volume (L)"),
             gr.Dropdown(["Grass","Grain","Mixed"],value="Grass",label="Feed"),
             gr.Slider(0,16,8,step=0.5,label="Sunlight (h/day)")],
-    outputs=gr.Textbox(label="Weight"), title="⚖️ Weight Estimator", flagging_mode="never",
+    outputs=gr.Textbox(label="Weight"), title="⚖️ Weight Estimator", allow_flagging="never",
 )
 full_tab = gr.Interface(
     fn=run_full,
@@ -213,7 +213,7 @@ full_tab = gr.Interface(
     outputs=[gr.Textbox(label="Breed"), gr.Textbox(label="Disease"),
              gr.Textbox(label="Muzzle ID"), gr.Textbox(label="Weight")],
     examples=[[BREED_SAMPLES[0],130,400,"Grass",8]] if BREED_SAMPLES else [],
-    title="🔍 Full Analysis", flagging_mode="never",
+    title="🔍 Full Analysis", allow_flagging="never",
 )
 
 demo = gr.TabbedInterface(
