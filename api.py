@@ -1,0 +1,110 @@
+"""api.py — FastAPI REST backend for AI Livestock Monitor"""
+
+import os, sys, io
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+
+from fastapi import FastAPI, File, UploadFile, Form, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
+from PIL import Image
+
+app = FastAPI(title="AI Livestock Monitor API", version="1.0.0")
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+# Lazy-load models once
+_predict_breed    = None
+_predict_disease  = None
+_identify_muzzle  = None
+_estimate_weight  = None
+
+def _load():
+    global _predict_breed, _predict_disease, _identify_muzzle, _estimate_weight
+    if _predict_breed is None:
+        from src.inference import predict_breed, predict_disease, identify_muzzle, estimate_weight
+        _predict_breed   = predict_breed
+        _predict_disease = predict_disease
+        _identify_muzzle = identify_muzzle
+        _estimate_weight = estimate_weight
+
+def _img(file: UploadFile) -> Image.Image:
+    return Image.open(io.BytesIO(file.file.read())).convert("RGB")
+
+
+@app.get("/health")
+def health():
+    return {"status": "ok"}
+
+
+@app.post("/predict/breed")
+async def breed(file: UploadFile = File(...)):
+    try:
+        _load()
+        result = _predict_breed(_img(file))
+        return result
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/predict/disease")
+async def disease(file: UploadFile = File(...)):
+    try:
+        _load()
+        result = _predict_disease(_img(file))
+        return result
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/predict/muzzle")
+async def muzzle(file: UploadFile = File(...), top_k: int = 3):
+    try:
+        _load()
+        result = _identify_muzzle(_img(file), top_k=top_k)
+        return result
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/predict/weight")
+async def weight(
+    height_cm: float = Form(...),
+    volume_l:  float = Form(...),
+    feed_idx:  int   = Form(...),
+    sunlight:  float = Form(...),
+):
+    try:
+        _load()
+        result = _estimate_weight(height_cm, volume_l, feed_idx, sunlight)
+        return result
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/predict/full")
+async def full(
+    file:      UploadFile = File(...),
+    height_cm: float = Form(130.0),
+    volume_l:  float = Form(400.0),
+    feed_idx:  int   = Form(0),
+    sunlight:  float = Form(8.0),
+):
+    try:
+        _load()
+        img    = _img(file)
+        breed  = _predict_breed(img)
+        disease = _predict_disease(img)
+        muzzle  = _identify_muzzle(img, top_k=3)
+        wt      = _estimate_weight(height_cm, volume_l, feed_idx, sunlight)
+        return {
+            "breed":   breed,
+            "disease": disease,
+            "muzzle":  muzzle,
+            "weight":  wt,
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
