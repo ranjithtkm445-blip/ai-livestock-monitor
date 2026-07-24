@@ -1,7 +1,6 @@
 """app.py — AI Livestock Platform for Render (fast startup, lazy heavy imports)"""
 
 import os, sys, json, threading
-from fastapi import FastAPI
 import gradio as gr
 from PIL import Image
 
@@ -222,14 +221,8 @@ demo = gr.TabbedInterface(
     title="🐄 AI Livestock Monitor — ROSCODE TECH",
 )
 
-# Mount on FastAPI — uvicorn binds port instantly, models load in background
-fastapi_app = FastAPI()
-
-@fastapi_app.get("/health")
-def health():
-    return {"status": "ok", "models_ready": _ready}
-
-app = gr.mount_gradio_app(fastapi_app, demo, path="/")
-
-# Start loading models in background AFTER app is defined
 threading.Thread(target=_load_all, daemon=True).start()
+
+if __name__ == "__main__":
+    port = int(os.environ.get("PORT", 7860))
+    demo.launch(server_name="0.0.0.0", server_port=port)
