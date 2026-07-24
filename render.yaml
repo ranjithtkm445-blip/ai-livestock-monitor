@@ -3,7 +3,7 @@ services:
     name: ai-livestock-monitor
     runtime: python
     buildCommand: pip install -r requirements.txt && python -c "import matplotlib; matplotlib.font_manager._rebuild()"
-    startCommand: python app.py
+    startCommand: streamlit run dashboard.py --server.port $PORT --server.address 0.0.0.0 --server.headless true
     envVars:
       - key: PYTHON_VERSION
         value: "3.11"
