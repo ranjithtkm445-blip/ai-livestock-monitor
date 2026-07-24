@@ -7,3 +7,12 @@ services:
     envVars:
       - key: PYTHON_VERSION
         value: "3.11"
+
+  - type: web
+    name: ai-livestock-api
+    runtime: python
+    buildCommand: pip install -r api_requirements.txt && python -c "import matplotlib; matplotlib.font_manager._rebuild()"
+    startCommand: uvicorn api:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: PYTHON_VERSION
+        value: "3.11"
