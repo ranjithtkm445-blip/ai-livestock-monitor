@@ -1,6 +1,7 @@
-"""app.py — HuggingFace Spaces Gradio interface for AI Livestock Platform"""
+"""app.py — AI Livestock Platform: FastAPI + Gradio for Render deployment"""
 
 import os, sys, json
+from fastapi import FastAPI
 import gradio as gr
 from PIL import Image
 import torch
@@ -355,6 +356,12 @@ def _warm():
         print(f"Warmup error: {e}")
 
 threading.Thread(target=_warm, daemon=True).start()
-port = int(os.environ.get("PORT", 10000))
-print(f"Starting on port {port}")
-demo.launch(server_name="0.0.0.0", server_port=port, share=False, show_error=True)
+
+# FastAPI mounts gradio — uvicorn binds port instantly
+fastapi_app = FastAPI()
+
+@fastapi_app.get("/health")
+def health():
+    return {"status": "ok"}
+
+app = gr.mount_gradio_app(fastapi_app, demo, path="/")
