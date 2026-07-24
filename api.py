@@ -18,7 +18,16 @@ SAMPLES = {
     "muzzle":  [f"muzzle_{i}.jpg" for i in range(7, 14)],
 }
 
-app = FastAPI(title="AI Livestock Monitor API", version="1.0.0")
+from contextlib import asynccontextmanager
+
+@asynccontextmanager
+async def lifespan(app):
+    print("Loading models at startup...")
+    _load()
+    print("All models ready.")
+    yield
+
+app = FastAPI(title="AI Livestock Monitor API", version="1.0.0", lifespan=lifespan)
 
 app.add_middleware(
     CORSMiddleware,
