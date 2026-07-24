@@ -5,7 +5,18 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from fastapi import FastAPI, File, UploadFile, Form, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse
 from PIL import Image
+
+SAMPLE_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "sample_images")
+
+SAMPLES = {
+    "breed":   ["breed_ayrshire.jpg", "breed_Holstein_Friesian_cattle.jpg",
+                 "breed_Jersey_cattle.jpg", "breed_Brown_Swiss_cattle.jpg"],
+    "disease": ["disease_healthy.jpg", "disease_h14.jpg", "disease_h15.jpg",
+                "disease_lumpy.jpg", "disease_l19.jpg", "disease_l20.jpg"],
+    "muzzle":  [f"muzzle_{i}.jpg" for i in range(7, 14)],
+}
 
 app = FastAPI(title="AI Livestock Monitor API", version="1.0.0")
 
@@ -38,6 +49,22 @@ def _img(file: UploadFile) -> Image.Image:
 @app.get("/health")
 def health():
     return {"status": "ok"}
+
+
+@app.get("/samples")
+def list_samples():
+    return {
+        category: [f for f in files if os.path.exists(os.path.join(SAMPLE_DIR, f))]
+        for category, files in SAMPLES.items()
+    }
+
+
+@app.get("/samples/{filename}")
+def get_sample(filename: str):
+    path = os.path.join(SAMPLE_DIR, filename)
+    if not os.path.exists(path) or not filename.endswith((".jpg", ".jpeg", ".png")):
+        raise HTTPException(status_code=404, detail="Sample not found")
+    return FileResponse(path, media_type="image/jpeg")
 
 
 @app.post("/predict/breed")
